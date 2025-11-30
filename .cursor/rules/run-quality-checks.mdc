@@ -1,0 +1,24 @@
+---
+globs: *.tsx,*.ts
+alwaysApply: false
+---
+# === Cursor Rules ===
+rules:
+
+  - id: always-run-quality-checks
+    description: Ensure every code generation triggers format, lint, and TypeScript checking
+    pattern: "**/*.{ts,tsx,js,jsx}"
+    actions:
+      - run: "pnpm run format:fix"
+      - run: "pnpm run lint:fix"
+      - run: "npm run typecheck"
+    trigger: "after_write"
+
+  # Optional: enforce code style strongly
+  - id: prefer-clean-code
+    description: Encourage clean, typed, readable output
+    message: |
+      Always generate code that:
+      - passes ESLint
+      - is formatted by Prettier
+      - has correct TypeScript types

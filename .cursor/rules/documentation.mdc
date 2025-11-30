@@ -1,0 +1,35 @@
+---
+description: Documentation must be English, structured, include TOC, and use clear examples
+globs: *.md,*.tsx,*.ts,*.js
+alwaysApply: false
+---
+# Documentation Standards
+
+## Requirements
+- English language only
+- Use logical heading structure (H1 → H2 → H3)
+- Short paragraphs, minimal fluff
+- Prefer lists, tables, and code examples
+- MUST include a Table of Contents after the main title
+
+## Recommended Structure
+```md
+# Title
+
+## Table of Contents
+- [Purpose](#purpose)
+- [Key Concepts](#key-concepts)
+- [Quick Example](#quick-example)
+- [Steps](#steps)
+
+## Purpose
+Short explanation of the document's objective.
+
+## Key Concepts
+- Concept A
+- Concept B
+- Concept C
+
+## Quick Example
+```ts
+runFeature({ debug: true });
