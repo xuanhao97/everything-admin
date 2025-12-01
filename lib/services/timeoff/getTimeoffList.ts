@@ -52,11 +52,7 @@ export async function getTimeoffList(
     validatedOptions = validationResult.data;
   }
 
-  // Get domain from env, replace account.base.vn with timeoff.base.vn if needed
-  const baseDomain = env.BASE_DOMAIN;
-
-  // Convert account.base.vn to timeoff.base.vn
-  const domain = baseDomain.replace("account.base.vn", "timeoff.base.vn");
+  const domain = env.BASE_TIMEOFF_DOMAIN;
 
   // Get access token from options, session, or environment variable (in that order)
   const sessionAccessToken = await getBaseAccessToken();
