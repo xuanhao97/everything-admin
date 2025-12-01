@@ -6,11 +6,8 @@
  * - Parses JSON responses
  * - Parses text responses
  * - Handles streaming content types
+ * - Moved from lib/utils/content-type.ts to avoid circular dependencies
  */
-
-import { createLogger } from "@/lib/loggers";
-
-const logger = createLogger({ service: "content-type-utils" });
 
 /**
  * Content type constants
@@ -131,11 +128,6 @@ interface ParseJsonResponseOptions {
    * Fetch response object
    */
   response: Response;
-  /**
-   * Whether to log errors
-   * @default true
-   */
-  logErrors?: boolean;
 }
 
 /**
@@ -144,7 +136,6 @@ interface ParseJsonResponseOptions {
  * Purpose: Safely parses JSON response with error handling
  * - Attempts JSON parsing
  * - Falls back to text if parsing fails
- * - Logs errors for debugging
  *
  * @param options - Parse JSON options
  * @returns Parsed JSON data or text fallback
@@ -159,30 +150,15 @@ interface ParseJsonResponseOptions {
 export async function parseJsonResponse(
   options: ParseJsonResponseOptions
 ): Promise<unknown> {
-  const { response, logErrors = true } = options;
+  const { response } = options;
 
   try {
     const text = await response.text();
     if (!text.trim()) {
-      if (logErrors) {
-        logger.debug("Empty JSON response body", {
-          status: response.status,
-          statusText: response.statusText,
-          contentType: response.headers.get("content-type"),
-          contentLength: response.headers.get("content-length"),
-        });
-      }
       return null;
     }
     return JSON.parse(text);
   } catch (error) {
-    if (logErrors) {
-      logger.warn("Failed to parse JSON response", {
-        error: error instanceof Error ? error.message : String(error),
-        contentType: response.headers.get("content-type"),
-        status: response.status,
-      });
-    }
     throw new Error(
       `Failed to parse JSON response: ${
         error instanceof Error ? error.message : String(error)
@@ -199,11 +175,6 @@ interface ParseTextResponseOptions {
    * Fetch response object
    */
   response: Response;
-  /**
-   * Whether to log errors
-   * @default true
-   */
-  logErrors?: boolean;
 }
 
 /**
@@ -212,7 +183,6 @@ interface ParseTextResponseOptions {
  * Purpose: Safely parses text response
  * - Reads response as text
  * - Handles encoding automatically
- * - Logs errors for debugging
  *
  * @param options - Parse text options
  * @returns Text content
@@ -227,17 +197,11 @@ interface ParseTextResponseOptions {
 export async function parseTextResponse(
   options: ParseTextResponseOptions
 ): Promise<string> {
-  const { response, logErrors = true } = options;
+  const { response } = options;
 
   try {
     return await response.text();
   } catch (error) {
-    if (logErrors) {
-      logger.error("Failed to parse text response", {
-        error: error instanceof Error ? error.message : String(error),
-        contentType: response.headers.get("content-type"),
-      });
-    }
     throw new Error(
       `Failed to parse text response: ${
         error instanceof Error ? error.message : String(error)
@@ -264,11 +228,6 @@ interface ParseResponseByContentTypeOptions {
    * @default false
    */
   forceText?: boolean;
-  /**
-   * Whether to log errors
-   * @default true
-   */
-  logErrors?: boolean;
 }
 
 /**
@@ -293,12 +252,7 @@ interface ParseResponseByContentTypeOptions {
 export async function parseResponseByContentType(
   options: ParseResponseByContentTypeOptions
 ): Promise<unknown> {
-  const {
-    response,
-    forceJson = false,
-    forceText = false,
-    logErrors = true,
-  } = options;
+  const { response, forceJson = false, forceText = false } = options;
 
   const contentType = detectContentType({
     headers: response.headers,
@@ -306,35 +260,30 @@ export async function parseResponseByContentType(
 
   // Force JSON parsing
   if (forceJson) {
-    return parseJsonResponse({ response, logErrors });
+    return parseJsonResponse({ response });
   }
 
   // Force text parsing
   if (forceText) {
-    return parseTextResponse({ response, logErrors });
+    return parseTextResponse({ response });
   }
 
   // Auto-detect based on content type
   if (isJsonContentType(contentType)) {
     try {
-      return await parseJsonResponse({ response, logErrors });
-    } catch (error) {
+      return await parseJsonResponse({ response });
+    } catch {
       // Fallback to text if JSON parsing fails
-      if (logErrors) {
-        logger.warn("JSON parsing failed, falling back to text", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-      return parseTextResponse({ response, logErrors: false });
+      return parseTextResponse({ response });
     }
   }
 
   if (isTextContentType(contentType)) {
-    return parseTextResponse({ response, logErrors });
+    return parseTextResponse({ response });
   }
 
   // Default to text for unknown content types
-  return parseTextResponse({ response, logErrors: false });
+  return parseTextResponse({ response });
 }
 
 /**

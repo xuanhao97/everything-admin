@@ -7,11 +7,14 @@
  * - Supports parser error configuration
  */
 
-import { createLogger } from "@/lib/loggers";
+import { FetchError, FetchErrorType, type ParserErrorOptions } from "./types";
 
-import { FetchError, FetchErrorType, type ParserErrorOptions } from "./index";
-
-type Logger = ReturnType<typeof createLogger>;
+/**
+ * Simple logger interface to avoid circular dependency
+ */
+interface SimpleLogger {
+  error: (message: string, data?: Record<string, unknown>) => void;
+}
 
 /**
  * Options for handling request error
@@ -35,8 +38,9 @@ export interface HandleRequestErrorOptions {
   timeout: number;
   /**
    * Logger instance (optional)
+   * Uses simple interface to avoid circular dependency
    */
-  logger?: Logger | null;
+  logger?: SimpleLogger | null;
   /**
    * Parser error options (optional)
    */

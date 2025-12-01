@@ -1,6 +1,6 @@
-// Purpose: NextAuth.js middleware for route protection
+// Purpose: NextAuth.js proxy for route protection
 // - Protects /admin routes requiring authentication
-// - Requires both Google OAuth and Base API access token
+// - Base API authentication is handled separately in admin layout
 // - Redirects unauthenticated users to sign-in page
 // - Allows public access to home and sign-in pages
 
@@ -21,20 +21,13 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // Protect admin routes
+  // Protect admin routes - only check NextAuth authentication
+  // Base API authentication will be handled in admin layout
   if (pathname.startsWith("/admin")) {
     // Check if user is authenticated (has NextAuth session)
     if (!req.auth) {
       const signInUrl = new URL("/sign-in", req.url);
       signInUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(signInUrl);
-    }
-
-    // Check if user has Base API access token (has permission to access Base)
-    if (!req.auth.baseAccessToken) {
-      const signInUrl = new URL("/sign-in", req.url);
-      signInUrl.searchParams.set("callbackUrl", pathname);
-      signInUrl.searchParams.set("error", "base_access_denied");
       return NextResponse.redirect(signInUrl);
     }
   }

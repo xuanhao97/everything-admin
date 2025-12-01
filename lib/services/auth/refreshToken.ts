@@ -5,6 +5,7 @@
 // - Validates input and output using Zod schemas
 
 import { env } from "@/env";
+import { getBaseCookie } from "@/lib/base-auth/base-cookie";
 import { createFetchClient } from "@/lib/fetch-client";
 import {
   refreshTokenDataSchema,
@@ -12,7 +13,6 @@ import {
   type RefreshTokenOptions,
   type RefreshTokenResponse,
 } from "@/lib/schemas/auth";
-import { getBaseCookie } from "@/lib/utils/base-api";
 
 // API endpoint path for token refresh
 const REFRESH_TOKEN_ENDPOINT = "/ajax/mobile/auth/refresh";

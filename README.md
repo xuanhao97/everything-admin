@@ -67,7 +67,7 @@ everything-admin/
 │   ├── auth/               # Auth components
 │   └── ui/                 # UI components
 ├── auth.ts                 # NextAuth configuration
-├── middleware.ts            # Route protection middleware
+├── proxy.ts                # Route protection proxy
 ├── .env.example             # Environment variables template
 ├── package.json
 ├── tsconfig.json
@@ -79,7 +79,7 @@ everything-admin/
 - **Authentication**: Google OAuth with Base API SSO integration and automatic token refresh
 - **Timeoff Management**: Service for fetching and managing timeoff data from Base API
 - **Webhook System**: Type-safe webhook handler system with messageType-based dispatching
-- **Protected Routes**: Admin routes protected with middleware authentication
+- **Protected Routes**: Admin routes protected with proxy authentication
 
 ## Installation
 

@@ -5,6 +5,7 @@
 // - Validates input and output using Zod schemas
 
 import { env } from "@/env";
+import { getBaseCookie } from "@/lib/base-auth/base-cookie";
 import { createFetchClient } from "@/lib/fetch-client";
 import {
   ssoGoogleDataSchema,
@@ -12,7 +13,6 @@ import {
   type SsoGoogleOptions,
   type SsoGoogleResponse,
 } from "@/lib/schemas/auth";
-import { getBaseCookie } from "@/lib/utils/base-api";
 
 // API endpoint path for SSO Google
 const SSO_GOOGLE_ENDPOINT = "/ajax/mobile/auth/sso/google";

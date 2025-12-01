@@ -5,6 +5,8 @@
 // - Validates input and output using Zod schemas
 
 import { env } from "@/env";
+import { getBaseAccessTokenFromContext } from "@/lib/base-auth";
+import { getBaseCookie } from "@/lib/base-auth/base-cookie";
 import { createFetchClient } from "@/lib/fetch-client";
 import {
   getTimeoffListOptionsSchema,
@@ -12,7 +14,6 @@ import {
   type GetTimeoffListOptions,
   type TimeoffListResponse,
 } from "@/lib/schemas/timeoff";
-import { getBaseAccessToken, getBaseCookie } from "@/lib/utils/base-api";
 
 // API endpoint path for timeoff list
 const TIMEOFF_LIST_ENDPOINT = "/ajax/api/mobile/timeoff/list";
@@ -52,10 +53,18 @@ export async function getTimeoffList(
     validatedOptions = validationResult.data;
   }
 
+  // Get domain - use dynamic access to avoid build-time evaluation issues
   const domain = env.BASE_TIMEOFF_DOMAIN;
 
-  // Get access token from options, session, or environment variable (in that order)
-  const sessionAccessToken = await getBaseAccessToken();
+  // Get access token from options or request context
+  // Base API tokens are stored in request context by admin layout
+  let sessionAccessToken: string | undefined;
+  try {
+    sessionAccessToken = await getBaseAccessTokenFromContext();
+  } catch {
+    // Ignore if not available (e.g., during build)
+    sessionAccessToken = undefined;
+  }
   const accessTokenValue = validatedOptions?.accessToken || sessionAccessToken;
 
   if (!accessTokenValue) {

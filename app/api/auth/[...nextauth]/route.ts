@@ -4,4 +4,7 @@
 
 import { handlers } from "@/auth";
 
+// Force dynamic rendering - NextAuth requires dynamic rendering for session handling
+export const dynamic = "force-dynamic";
+
 export const { GET, POST } = handlers;

@@ -9,6 +9,9 @@
 // 2. Enable Google OAuth
 // 3. Disable email/password and other OAuth providers
 
+// Force dynamic rendering - this page requires authentication and session data
+export const dynamic = "force-dynamic";
+
 import { SignInForm } from "@/components/auth/sign-in-form";
 
 export default function SignInPage() {

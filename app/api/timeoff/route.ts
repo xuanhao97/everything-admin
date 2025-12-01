@@ -10,6 +10,9 @@ import { NextResponse } from "next/server";
 
 import { getTimeoffList } from "@/lib/services/timeoff";
 
+// Force dynamic rendering - API route requires session/cookies
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const result = await getTimeoffList();

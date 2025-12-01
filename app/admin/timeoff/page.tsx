@@ -5,6 +5,9 @@
 
 import { Suspense } from "react";
 
+// Force dynamic rendering - this page requires authentication and session data
+export const dynamic = "force-dynamic";
+
 import { TimeoffTableWrapper } from "@/components/admin/timeoff-table-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";

@@ -7,6 +7,9 @@ import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 import "./styles/globals.css";
 
+// Force dynamic rendering - app uses authentication
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Base Admin",
   description: "Base Admin - Fullstack Next.js Application",

@@ -9,16 +9,13 @@
  * - Supports baseUrl for API endpoints
  */
 
-import { createLogger } from "@/lib/loggers";
+import { handleRequestError as handleRequestErrorUtil } from "./error-handler";
+import { FetchError, FetchErrorType, type ParserErrorOptions } from "./types";
 import {
   detectContentType,
   getStreamingResponse,
   parseResponseByContentType,
-} from "@/lib/utils/content-type";
-
-type Logger = ReturnType<typeof createLogger>;
-
-import { handleRequestError as handleRequestErrorUtil } from "./error-handler";
+} from "./utils";
 
 /**
  * Options for fetch request
@@ -106,117 +103,8 @@ export interface FetchStreamResult {
   response: Response;
 }
 
-/**
- * Fetch Error Types
- */
-export enum FetchErrorType {
-  /**
-   * Network error (connection failed, timeout, etc.)
-   */
-  NETWORK = "NETWORK",
-  /**
-   * HTTP error (4xx, 5xx status codes)
-   */
-  HTTP = "HTTP",
-  /**
-   * Timeout error
-   */
-  TIMEOUT = "TIMEOUT",
-  /**
-   * Parser error (JSON parsing failed, etc.)
-   */
-  PARSER = "PARSER",
-  /**
-   * Unknown error
-   */
-  UNKNOWN = "UNKNOWN",
-}
-
-/**
- * Fetch Error
- *
- * Purpose: Custom error class for fetch client errors
- * - Provides error type classification
- * - Includes request context
- * - Supports error metadata
- */
-export class FetchError extends Error {
-  /**
-   * Error type
-   */
-  public readonly type: FetchErrorType;
-
-  /**
-   * Request URL
-   */
-  public readonly url: string;
-
-  /**
-   * Request method
-   */
-  public readonly method: string;
-
-  /**
-   * HTTP status code (if applicable)
-   */
-  public readonly status?: number;
-
-  /**
-   * Error metadata
-   */
-  public readonly metadata?: Record<string, unknown>;
-
-  /**
-   * Create FetchError instance
-   *
-   * @param type - Error type
-   * @param message - Error message
-   * @param options - Error options
-   */
-  constructor(
-    type: FetchErrorType,
-    message: string,
-    options: {
-      url: string;
-      method: string;
-      status?: number;
-      metadata?: Record<string, unknown>;
-    }
-  ) {
-    super(message);
-    this.name = "FetchError";
-    this.type = type;
-    this.url = options.url;
-    this.method = options.method;
-    this.status = options.status;
-    this.metadata = options.metadata;
-
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, FetchError);
-    }
-  }
-}
-
-/**
- * Parser error options
- */
-export interface ParserErrorOptions {
-  /**
-   * Whether to throw error on parser failure
-   * @default true
-   */
-  throwOnError?: boolean;
-  /**
-   * Whether to log parser errors
-   * @default true
-   */
-  logErrors?: boolean;
-  /**
-   * Fallback value when parser fails and throwOnError is false
-   */
-  fallbackValue?: unknown;
-}
+// Re-export types from types.ts
+export { FetchError, FetchErrorType, type ParserErrorOptions } from "./types";
 
 /**
  * Configuration options for FetchClient
@@ -364,7 +252,6 @@ interface HandleRegularResponseOptions {
  * - Supports baseUrl for API endpoints
  */
 export class FetchClient {
-  private logger: Logger | null = null;
   private config: FetchClientConfig;
 
   /**
@@ -397,9 +284,7 @@ export class FetchClient {
       ...config,
     };
 
-    if (this.config.enableLogger) {
-      this.logger = createLogger({ service: "fetch-client" });
-    }
+    // Logger removed to avoid circular dependency
   }
 
   /**
@@ -407,63 +292,49 @@ export class FetchClient {
    *
    * Purpose: Updates client configuration
    * - Merges with existing config
-   * - Recreates logger if enableLogger changes
    *
    * @param config - Configuration to update
    */
   updateConfig(config: Partial<FetchClientConfig>): void {
-    const wasLoggerEnabled = this.config.enableLogger;
     this.config = { ...this.config, ...config };
-
-    if (this.config.enableLogger && !wasLoggerEnabled) {
-      this.logger = createLogger({ service: "fetch-client" });
-    } else if (!this.config.enableLogger && wasLoggerEnabled) {
-      this.logger = null;
-    }
   }
 
   /**
    * Log debug message
-   *
-   * Purpose: Conditionally logs debug messages
-   * - Only logs if logger is enabled
+   * Uses console.log to avoid circular dependency with loggers
    *
    * @param message - Log message
    * @param data - Log data
    */
   private logDebug(message: string, data?: Record<string, unknown>): void {
-    if (this.logger) {
-      this.logger.debug(message, data);
+    if (this.config.enableLogger) {
+      console.debug(`[fetch-client] ${message}`, data || {});
     }
   }
 
   /**
    * Log error message
-   *
-   * Purpose: Conditionally logs error messages
-   * - Only logs if logger is enabled
+   * Uses console.error to avoid circular dependency with loggers
    *
    * @param message - Log message
    * @param data - Log data
    */
   private logError(message: string, data?: Record<string, unknown>): void {
-    if (this.logger) {
-      this.logger.error(message, data);
+    if (this.config.enableLogger) {
+      console.error(`[fetch-client] ${message}`, data || {});
     }
   }
 
   /**
    * Log warning message
-   *
-   * Purpose: Conditionally logs warning messages
-   * - Only logs if logger is enabled
+   * Uses console.warn to avoid circular dependency with loggers
    *
    * @param message - Log message
    * @param data - Log data
    */
   private logWarn(message: string, data?: Record<string, unknown>): void {
-    if (this.logger) {
-      this.logger.warn(message, data);
+    if (this.config.enableLogger) {
+      console.warn(`[fetch-client] ${message}`, data || {});
     }
   }
 
@@ -782,7 +653,6 @@ export class FetchClient {
         response,
         forceJson: parseJson === true,
         forceText: parseJson === false,
-        logErrors: this.config.parserError?.logErrors !== false,
       })) as TResponse;
 
       this.logDebug("Fetch request successful", {
@@ -975,7 +845,15 @@ export class FetchClient {
         url,
         method,
         timeout,
-        logger: this.logger,
+        logger: this.config.enableLogger
+          ? ({
+              error: (msg: string, data?: Record<string, unknown>) => {
+                console.error(`[fetch-client] ${msg}`, data || {});
+              },
+            } as {
+              error: (msg: string, data?: Record<string, unknown>) => void;
+            })
+          : null,
         parserError: this.config.parserError,
       });
     }
