@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { User } from "lucide-react";
 import * as React from "react";
 

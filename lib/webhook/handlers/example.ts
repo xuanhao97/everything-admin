@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { logger } from "@/lib/loggers";
+
 import { registerHandler } from "../dispatcher";
 
 // Example payload schema for a specific messageType
@@ -28,7 +30,7 @@ async function handleExample(payload: unknown) {
 
   // Business logic here
   // Example: process the data, save to database, etc.
-  console.log("Processing example webhook:", data);
+  logger.info("Processing example webhook: ", data);
 
   return {
     success: true,
