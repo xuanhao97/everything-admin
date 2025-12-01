@@ -1,27 +1,22 @@
-import type { LoggerAdapter } from "./adapters/adapter";
-import { ConsoleAdapter } from "./adapters/console-adapter";
-import type { LoggerConfig } from "./types";
+import { createDefaultAdapter } from "./factory";
+import type { LoggerAdapter, LoggerConfig } from "./types";
+import { getDefaultConfig } from "./utils";
+
+// Lazy initialization to avoid creating adapter instance at module load time
+let defaultAdapterInstance: LoggerAdapter | null = null;
 
 const getDefaultAdapter = (): LoggerAdapter => {
-  return new ConsoleAdapter();
+  if (!defaultAdapterInstance) {
+    // Use factory to create default adapter (avoids direct import of adapters)
+    defaultAdapterInstance = createDefaultAdapter(defaultConfigValues);
+  }
+  return defaultAdapterInstance;
 };
 
-const getEnabledFromEnv = (): boolean => {
-  const envValue = process.env.LOGGER_ENABLED;
-  if (envValue === undefined) return true;
-  return envValue === "true" || envValue === "1";
-};
-
+const defaultConfigValues = getDefaultConfig();
 const defaultConfig: LoggerConfig = {
-  enabled: getEnabledFromEnv(),
-  showTimestamp: true,
-  showContext: true,
-  showMetadata: true,
-  adapter: getDefaultAdapter(),
-  debugFilter: {
-    enabled: false,
-    contexts: [],
-  },
+  ...defaultConfigValues,
+  // adapter will be initialized lazily via getAdapter()
 };
 
 let currentConfig: LoggerConfig = { ...defaultConfig };
@@ -56,5 +51,9 @@ export const setAdapter = (adapter: LoggerAdapter): void => {
 };
 
 export const getAdapter = (): LoggerAdapter => {
-  return currentConfig.adapter || getDefaultAdapter();
+  // Lazy initialization: if adapter is not set, use default
+  if (!currentConfig.adapter) {
+    currentConfig.adapter = getDefaultAdapter();
+  }
+  return currentConfig.adapter;
 };

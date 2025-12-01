@@ -292,6 +292,16 @@ export default [
           },
         },
       ],
+      // Detect circular dependencies
+      "import/no-cycle": [
+        "error",
+        {
+          maxDepth: 10,
+          ignoreExternal: true,
+        },
+      ],
+      // Prevent importing from parent directories that could cause cycles
+      "import/no-relative-packages": "error",
 
       // TypeScript rules
       "@typescript-eslint/no-unused-vars": [

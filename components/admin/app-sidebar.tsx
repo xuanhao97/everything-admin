@@ -49,7 +49,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg">
-              <Link href="/admin" aria-label="Base Admin Home">
+              <Link href="/admin" aria-label="Everything Admin Home">
                 <div
                   className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
                   aria-hidden="true"
@@ -57,7 +57,9 @@ export function AppSidebar() {
                   <span className="text-base font-semibold">BA</span>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[sidebar-state=collapsed]/sidebar-wrapper:hidden">
-                  <span className="truncate font-semibold">Base Admin</span>
+                  <span className="truncate font-semibold">
+                    Everything Admin
+                  </span>
                   <span className="truncate text-xs">Admin Panel</span>
                 </div>
               </Link>

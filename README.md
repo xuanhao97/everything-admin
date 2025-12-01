@@ -1,4 +1,4 @@
-# Base Admin
+# Everything Admin
 
 ## Table of Contents
 

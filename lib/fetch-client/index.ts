@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Fetch Client
  *
@@ -8,6 +9,8 @@
  * - Provides type-safe request/response handling
  * - Supports baseUrl for API endpoints
  */
+
+import { env } from "@/env";
 
 import { handleRequestError as handleRequestErrorUtil } from "./error-handler";
 import { FetchError, FetchErrorType, type ParserErrorOptions } from "./types";
@@ -275,7 +278,7 @@ export class FetchClient {
   constructor(config: FetchClientConfig = {}) {
     this.config = {
       defaultTimeout: 60000,
-      enableLogger: false,
+      enableLogger: env.FETCH_CLIENT_ENABLE_LOGGER === "true",
       parserError: {
         throwOnError: true,
         logErrors: true,

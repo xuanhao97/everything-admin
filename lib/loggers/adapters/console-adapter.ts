@@ -4,14 +4,19 @@ import {
   formatTimestamp,
   logLevelColors,
 } from "../colors";
-import { getConfig } from "../config";
-import type { LogEntry } from "../types";
+import type { LogEntry, LoggerConfig } from "../types";
+import { getDefaultConfig } from "../utils";
 
 import type { LoggerAdapter } from "./adapter";
 
 export class ConsoleAdapter implements LoggerAdapter {
+  private config: Omit<LoggerConfig, "adapter">;
+
+  constructor(config?: Omit<LoggerConfig, "adapter">) {
+    this.config = config || getDefaultConfig();
+  }
+
   log(entry: LogEntry): void {
-    const config = getConfig();
     const levelConfig = logLevelColors[entry.level];
 
     if (!levelConfig) {
@@ -22,7 +27,7 @@ export class ConsoleAdapter implements LoggerAdapter {
 
     const parts: string[] = [];
 
-    if (config.showTimestamp) {
+    if (this.config.showTimestamp) {
       parts.push(
         formatColor(`[${formatTimestamp(entry.timestamp)}]`, colors.dim)
       );
@@ -34,7 +39,7 @@ export class ConsoleAdapter implements LoggerAdapter {
     );
     parts.push(levelLabel);
 
-    if (config.showContext && entry.context) {
+    if (this.config.showContext && entry.context) {
       const contextStr = Object.entries(entry.context)
         .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
         .join(" ");
@@ -43,7 +48,7 @@ export class ConsoleAdapter implements LoggerAdapter {
 
     parts.push(formatColor(entry.message, levelConfig.text));
 
-    if (config.showMetadata && entry.metadata) {
+    if (this.config.showMetadata && entry.metadata) {
       const metadataStr = Object.entries(entry.metadata)
         .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
         .join(" ");

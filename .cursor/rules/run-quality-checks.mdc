@@ -1,24 +1,26 @@
 ---
-globs: *.tsx,*.ts
-alwaysApply: false
+description: Cursor Rules for TypeScript / TSX files
+globs:
+  - "*.ts"
+  - "*.tsx"
+alwaysApply: true
 ---
-# === Cursor Rules ===
+
 rules:
 
-  - id: always-run-quality-checks
-    description: Ensure every code generation triggers format, lint, and TypeScript checking
-    pattern: "**/*.{ts,tsx,js,jsx}"
+- id: run-quality-checks-on-every-change
+  description: Always run format, lint, and typecheck whenever Cursor writes/changes files
+  triggers:
+  - after_write
     actions:
-      - run: "pnpm run format:fix"
-      - run: "pnpm run lint:fix"
-      - run: "npm run typecheck"
-    trigger: "after_write"
+  - run: pnpm run format:fix
+  - run: pnpm run lint:fix
+  - run: pnpm run typecheck
 
-  # Optional: enforce code style strongly
-  - id: prefer-clean-code
-    description: Encourage clean, typed, readable output
-    message: |
-      Always generate code that:
-      - passes ESLint
-      - is formatted by Prettier
-      - has correct TypeScript types
+- id: prefer-clean-code
+  description: Encourage clean, typed, readable output
+  message: |
+  Always generate code that:
+  - passes ESLint
+  - is formatted by Prettier
+  - has correct TypeScript types

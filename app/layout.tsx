@@ -11,8 +11,8 @@ import "./styles/globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Base Admin",
-  description: "Base Admin - Fullstack Next.js Application",
+  title: "Everything Admin",
+  description: "Everything Admin - Fullstack Next.js Application",
 };
 
 export default function RootLayout({

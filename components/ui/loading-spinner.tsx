@@ -90,9 +90,9 @@ function PulseVariant({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   );
 }
 
-// Purpose: Animated text component for "Base Admin" with running effect
+// Purpose: Animated text component for "Everything Admin" with running effect
 function AnimatedText() {
-  const text = "Base Admin";
+  const text = "Everything Admin";
   const letters = text.split("");
 
   return (
@@ -152,6 +152,49 @@ export function LoadingSpinner({
       {variant === "dots" && <DotsVariant size={size} />}
       {variant === "pulse" && <PulseVariant size={size} />}
       {showText && <AnimatedText />}
+    </div>
+  );
+}
+
+// Purpose: Fullscreen loading component
+// - Covers entire viewport with loading spinner
+// - Provides backdrop overlay
+// - Centered spinner with optional text
+//
+// Example:
+// <LoadingFullscreen />
+// <LoadingFullscreen variant="dots" />
+interface LoadingFullscreenProps {
+  variant?: "spinner" | "dots" | "pulse";
+  size?: "sm" | "md" | "lg";
+  showText?: boolean;
+  className?: string;
+}
+
+export function LoadingFullscreen({
+  variant = "spinner",
+  size = "lg",
+  showText = true,
+  className,
+}: LoadingFullscreenProps) {
+  return (
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center",
+        "bg-background/80 backdrop-blur-sm",
+        className
+      )}
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading"
+    >
+      <span className="sr-only">Loading...</span>
+      <LoadingSpinner
+        size={size}
+        variant={variant}
+        showText={showText}
+        className="bg-background/95 rounded-lg p-8 shadow-lg"
+      />
     </div>
   );
 }

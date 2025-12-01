@@ -14,6 +14,7 @@ export const env = createEnv({
     BASE_DOMAIN: z.string().url(),
     BASE_TIMEOFF_DOMAIN: z.string().url().optional(),
     BASE_ID: z.string().optional(),
+    FETCH_CLIENT_ENABLE_LOGGER: z.enum(["true", "false"]).optional(),
   },
   client: {},
   runtimeEnv: {
@@ -23,6 +24,7 @@ export const env = createEnv({
     BASE_DOMAIN: process.env.BASE_DOMAIN,
     BASE_TIMEOFF_DOMAIN: process.env.BASE_TIMEOFF_DOMAIN,
     BASE_ID: process.env.BASE_ID,
+    FETCH_CLIENT_ENABLE_LOGGER: process.env.FETCH_CLIENT_ENABLE_LOGGER,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,

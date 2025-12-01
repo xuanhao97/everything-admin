@@ -70,7 +70,6 @@ export async function refreshToken(
   // fetch-client handles logging and error handling internally when enableLogger is true
   const client = createFetchClient({
     baseUrl: domain,
-    enableLogger: true,
   });
 
   // Prepare form data (URLSearchParams for form-urlencoded)

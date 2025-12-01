@@ -9,7 +9,10 @@ export interface LoggerContext {
   [key: string]: unknown;
 }
 
-import type { LoggerAdapter } from "./adapters/adapter";
+// LoggerAdapter interface moved here to avoid config.ts importing from adapters
+export interface LoggerAdapter {
+  log(entry: LogEntry): void;
+}
 
 export interface LoggerConfig {
   enabled: boolean;

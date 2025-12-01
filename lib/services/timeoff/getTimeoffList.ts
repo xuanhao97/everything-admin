@@ -8,6 +8,7 @@ import { env } from "@/env";
 import { getBaseAccessTokenFromContext } from "@/lib/base-auth";
 import { getBaseCookie } from "@/lib/base-auth/base-cookie";
 import { createFetchClient } from "@/lib/fetch-client";
+import { logger } from "@/lib/loggers";
 import {
   getTimeoffListOptionsSchema,
   timeoffListDataSchema,
@@ -57,17 +58,26 @@ export async function getTimeoffList(
   const domain = env.BASE_TIMEOFF_DOMAIN;
 
   // Get access token from options or request context
-  // Base API tokens are stored in request context by admin layout
+  // getBaseAccessTokenFromContext() will automatically call ensureBaseAuth() if token is missing
+  // This ensures token is always available even if AsyncLocalStorage context is lost
   let sessionAccessToken: string | undefined;
   try {
     sessionAccessToken = await getBaseAccessTokenFromContext();
-  } catch {
-    // Ignore if not available (e.g., during build)
+  } catch (error) {
+    // getBaseAccessTokenFromContext() may throw Next.js redirect errors
+    // These should be allowed to propagate (they redirect to sign-in)
+    if (error && typeof error === "object" && "digest" in error) {
+      // This is a Next.js redirect, re-throw it
+      throw error;
+    }
     sessionAccessToken = undefined;
   }
   const accessTokenValue = validatedOptions?.accessToken || sessionAccessToken;
 
   if (!accessTokenValue) {
+    logger.error(
+      "getTimeoffList: Access token not available after ensureBaseAuth()"
+    );
     return {
       success: false,
       error: ERROR_MISSING_TOKEN,
@@ -82,7 +92,6 @@ export async function getTimeoffList(
   // fetch-client handles logging and error handling internally when enableLogger is true
   const client = createFetchClient({
     baseUrl: domain,
-    enableLogger: true,
   });
 
   // Prepare headers

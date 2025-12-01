@@ -10,8 +10,8 @@
 // <SignInForm redirectUrl="/admin" />
 
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";

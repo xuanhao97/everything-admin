@@ -33,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/sign-in",
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       // Initial sign in - store Google OAuth tokens
       // Base API authentication is handled separately when accessing /admin routes
       if (account && user) {
@@ -47,6 +47,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         delete token.baseAccessToken;
         delete token.baseRefreshToken;
         delete token.baseExpiresAt;
+      }
+
+      // Allow updating Base API tokens via session update
+      // This is used by ensureBaseAuth() to store tokens
+      if (trigger === "update" && session) {
+        // Update Base API tokens from session update
+        if (session.baseAccessToken) {
+          token.baseAccessToken = session.baseAccessToken as string;
+        }
+        if (session.baseRefreshToken) {
+          token.baseRefreshToken = session.baseRefreshToken as string;
+        }
+        if (session.baseExpiresAt !== undefined) {
+          token.baseExpiresAt = session.baseExpiresAt as number;
+        }
       }
 
       return token;
@@ -74,16 +89,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.googleRefreshToken = token.googleRefreshToken;
       }
 
+      // Add Base API tokens to session (stored in JWT, not exposed to client by default)
+      // These are used server-side only
+      if (token.baseAccessToken && typeof token.baseAccessToken === "string") {
+        session.baseAccessToken = token.baseAccessToken;
+      }
+      if (
+        token.baseRefreshToken &&
+        typeof token.baseRefreshToken === "string"
+      ) {
+        session.baseRefreshToken = token.baseRefreshToken;
+      }
+      if (token.baseExpiresAt && typeof token.baseExpiresAt === "number") {
+        session.baseExpiresAt = token.baseExpiresAt;
+      }
+
       return session;
     },
   },
 });
 
-// Extend NextAuth types to include Google OAuth tokens
+// Extend NextAuth types to include Google OAuth tokens and Base API tokens
 declare module "next-auth" {
   interface Session {
     googleAccessToken?: string;
     googleRefreshToken?: string;
+    baseAccessToken?: string;
+    baseRefreshToken?: string;
+    baseExpiresAt?: number;
+  }
+  interface JWT {
+    baseAccessToken?: string;
+    baseRefreshToken?: string;
+    baseExpiresAt?: number;
   }
 }
 
