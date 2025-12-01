@@ -4,12 +4,14 @@
 // - Returns new token data or error information
 // - Validates input and output using Zod schemas
 
+import { env } from "@/env";
 import {
   refreshTokenDataSchema,
   refreshTokenOptionsSchema,
   type RefreshTokenOptions,
   type RefreshTokenResponse,
 } from "@/lib/schemas/auth";
+import { getBaseCookie } from "@/lib/utils/base-api";
 
 // API endpoint path for token refresh
 const REFRESH_TOKEN_ENDPOINT = "/ajax/mobile/auth/refresh";
@@ -21,7 +23,6 @@ const MOBILE_CODE = "mobile";
 const USER_AGENT = "hrm/2 CFNetwork/3860.200.71 Darwin/25.1.0";
 
 // Error messages
-const ERROR_MISSING_DOMAIN = "BASE_DOMAIN environment variable is not set";
 const ERROR_MISSING_TOKEN = "Refresh token is not provided";
 const ERROR_INVALID_RESPONSE = "Response data validation failed";
 
@@ -53,19 +54,10 @@ export async function refreshToken(
     validatedOptions = validationResult.data;
   }
 
-  const domain = process.env.BASE_DOMAIN;
-  const defaultRefreshToken = process.env.BASE_REFRESH_TOKEN;
-  const cookie = process.env.BASE_COOKIE;
+  const domain = env.BASE_DOMAIN;
+  const cookie = getBaseCookie();
 
-  if (!domain) {
-    return {
-      success: false,
-      error: ERROR_MISSING_DOMAIN,
-    };
-  }
-
-  const refreshTokenValue =
-    validatedOptions?.refreshToken || defaultRefreshToken;
+  const refreshTokenValue = validatedOptions?.refreshToken;
   if (!refreshTokenValue) {
     return {
       success: false,

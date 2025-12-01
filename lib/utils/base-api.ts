@@ -4,6 +4,7 @@
 // - Can be used in server components and API routes
 
 import { auth } from "@/auth";
+import { env } from "@/env";
 
 /**
  * Gets Base API access token from session
@@ -13,7 +14,7 @@ import { auth } from "@/auth";
  */
 export async function getBaseAccessToken(): Promise<string | undefined> {
   const session = await auth();
-  return session?.baseAccessToken || process.env.BASE_ACCESS_TOKEN;
+  return session?.baseAccessToken;
 }
 
 /**
@@ -24,7 +25,7 @@ export async function getBaseAccessToken(): Promise<string | undefined> {
  */
 export async function getBaseRefreshToken(): Promise<string | undefined> {
   const session = await auth();
-  return session?.baseRefreshToken || process.env.BASE_REFRESH_TOKEN;
+  return session?.baseRefreshToken;
 }
 
 /**
@@ -33,7 +34,8 @@ export async function getBaseRefreshToken(): Promise<string | undefined> {
  * @returns Base API cookie or undefined
  */
 export function getBaseCookie(): string | undefined {
-  return process.env.BASE_COOKIE;
+  if (!env.BASE_ID) return undefined;
+  return `baseid=${env.BASE_ID}`;
 }
 
 /**

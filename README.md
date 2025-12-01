@@ -3,34 +3,83 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [Project Structure](#project-structure)
 - [Features](#features)
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
 - [Usage](#usage)
-- [Authentication Service](#authentication-service)
 - [Webhook System](#webhook-system)
-- [Project Structure](#project-structure)
-- [Examples](#examples)
 
 ## Overview
 
-Base Admin is a fullstack Next.js application built with TypeScript, Server Components, and Server Actions. It includes a robust webhook system for handling Make.com webhooks with type-safe validation and handler dispatching.
+Everything Admin is a fullstack Next.js application that provides authentication with Google OAuth and Base API SSO integration, automatic token refresh, timeoff management, and a robust webhook system for handling Make.com webhooks with type-safe validation and handler dispatching.
+
+## Project Structure
+
+```
+everything-admin/
+├── app/
+│   ├── admin/                # Admin routes
+│   │   ├── layout.tsx        # Admin layout with sidebar
+│   │   ├── page.tsx         # Admin dashboard
+│   │   └── timeoff/         # Timeoff management
+│   │       └── page.tsx
+│   ├── api/
+│   │   ├── auth/            # NextAuth API routes
+│   │   │   └── [...nextauth]/
+│   │   │       └── route.ts
+│   │   ├── timeoff/         # Timeoff API routes
+│   │   │   └── route.ts
+│   │   └── webhook/         # Webhook API endpoint
+│   │       └── route.ts
+│   ├── auth/                # Auth pages
+│   │   └── google/           # Google OAuth callback
+│   ├── sign-in/             # Sign in page
+│   ├── layout.tsx            # Root layout
+│   └── page.tsx             # Home page
+├── lib/
+│   ├── constants/           # Constants
+│   │   └── timeoff/         # Timeoff constants
+│   ├── logger/              # Logger utility
+│   ├── schemas/             # Zod validation schemas
+│   │   ├── auth/            # Auth schemas
+│   │   └── timeoff/          # Timeoff schemas
+│   ├── services/            # Business logic services
+│   │   ├── auth/            # Authentication services
+│   │   │   ├── index.ts
+│   │   │   ├── refreshToken.ts
+│   │   │   └── ssoGoogle.ts
+│   │   └── timeoff/          # Timeoff services
+│   │       ├── index.ts
+│   │       └── getTimeoffList.ts
+│   ├── utils/               # Utility functions
+│   │   ├── base-api.ts      # Base API token utilities
+│   │   ├── jwt.ts           # JWT token utilities
+│   │   └── utils.ts         # General utilities
+│   └── webhook/             # Webhook system
+│       ├── schemas.ts       # Base webhook schemas
+│       ├── dispatcher.ts    # Handler dispatch logic
+│       └── handlers/        # Webhook handlers
+│           ├── index.ts
+│           └── example.ts
+├── components/              # React components
+│   ├── admin/              # Admin components
+│   ├── auth/               # Auth components
+│   └── ui/                 # UI components
+├── auth.ts                 # NextAuth configuration
+├── middleware.ts            # Route protection middleware
+├── .env.example             # Environment variables template
+├── package.json
+├── tsconfig.json
+└── next.config.js
+```
 
 ## Features
 
-- Next.js 15 with App Router
-- TypeScript for type safety
-- Server Components by default
-- Server Actions for server-side operations
-- Zod schema validation
-- Better Auth authentication with Google OAuth (no database required)
-- Protected admin routes with middleware
-- Authentication service with token refresh
-- Webhook handler system with messageType-based dispatching
-- Stable webhook API response format
-- ESLint for code linting
-- Prettier for code formatting
-- Strict TypeScript configuration
+- **Authentication**: Google OAuth with Base API SSO integration and automatic token refresh
+- **Timeoff Management**: Service for fetching and managing timeoff data from Base API
+- **Webhook System**: Type-safe webhook handler system with messageType-based dispatching
+- **Protected Routes**: Admin routes protected with middleware authentication
 
 ## Installation
 
@@ -46,17 +95,7 @@ Copy `.env.example` to `.env.local` and fill in your values:
 cp .env.example .env.local
 ```
 
-Required environment variables:
-
-- `GOOGLE_CLIENT_ID`: Google OAuth Client ID (get from [Google Cloud Console](https://console.cloud.google.com/apis/credentials))
-- `GOOGLE_CLIENT_SECRET`: Google OAuth Client Secret (get from [Google Cloud Console](https://console.cloud.google.com/apis/credentials))
-- `BETTER_AUTH_URL` (optional): Base URL for Better Auth (defaults to `NEXT_PUBLIC_APP_URL` or `http://localhost:3000`)
-- `NEXT_PUBLIC_APP_URL` (optional): Public app URL (defaults to `http://localhost:3000`)
-- `BASE_DOMAIN`: Base API domain (e.g., `https://account.base.vn`)
-- `BASE_REFRESH_TOKEN`: Refresh token for authentication
-- `BASE_COOKIE`: Session cookie (optional)
-
-### Better Auth Configuration
+### NextAuth Configuration
 
 1. Create a Google OAuth application:
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -68,14 +107,21 @@ Required environment variables:
    - Add production redirect URI: `https://yourdomain.com/api/auth/callback/google` (for production)
    - Copy **Client ID** and **Client Secret**
 
-2. Add credentials to `.env.local`:
+2. Generate AUTH_SECRET:
+
+   ```bash
+   openssl rand -base64 32
+   ```
+
+3. Add credentials to `.env.local`:
 
    ```bash
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret
+   AUTH_SECRET=your_generated_secret
    ```
 
-3. **Note**: This setup uses in-memory storage (no database). Sessions will be lost on server restart. For production with persistent sessions, consider adding a database.
+4. **Note**: This setup uses JWT strategy (no database). Sessions are stored in encrypted JWTs. Base API tokens are automatically refreshed when expired.
 
 ## Usage
 
@@ -110,65 +156,6 @@ pnpm format:check
 # Type check without building
 pnpm type-check
 ```
-
-## Authentication Service
-
-### Refresh Token
-
-The authentication service provides a `refreshToken` function to refresh authentication tokens with the Base API.
-
-#### Basic Usage
-
-```typescript
-import { refreshToken } from "@/lib/services/auth";
-
-// Use environment variables
-const result = await refreshToken();
-
-if (result.success) {
-  console.log(result.data?.access_token);
-  console.log(result.data?.refresh_token);
-} else {
-  console.error(result.error);
-}
-```
-
-#### With Custom Options
-
-```typescript
-import { refreshToken } from "@/lib/services/auth";
-
-// Override refresh token and cookie
-const result = await refreshToken({
-  refreshToken: "your_custom_token",
-  cookie: "basessid=your_cookie",
-});
-```
-
-#### Response Format
-
-```typescript
-{
-  success: boolean;
-  data?: {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-    [key: string]: unknown;
-  };
-  error?: string;
-  message?: string;
-}
-```
-
-#### Validation
-
-The service uses Zod schemas to validate:
-
-- Input options (refreshToken, cookie)
-- API response data structure
-
-Invalid inputs or responses will return detailed error messages.
 
 ## Webhook System
 
@@ -247,80 +234,3 @@ registerHandler("my-message-type", handleMyMessage);
 import "./my-handler";
 ```
 
-## Project Structure
-
-```
-base-admin/
-├── app/
-│   ├── api/
-│   │   └── webhook/
-│   │       └── route.ts      # Webhook API endpoint
-│   ├── layout.tsx            # Root layout
-│   └── page.tsx              # Home page
-├── lib/
-│   ├── auth/
-│   │   ├── index.ts          # Auth service exports
-│   │   ├── refreshToken.ts   # Refresh token service
-│   │   └── schemas.ts        # Auth validation schemas
-│   └── webhook/
-│       ├── schemas.ts        # Base webhook schemas
-│       ├── dispatcher.ts     # Handler dispatch logic
-│       └── handlers/
-│           ├── index.ts      # Handler registry imports
-│           └── example.ts    # Example handler
-├── .env.example              # Environment variables template
-├── package.json
-├── tsconfig.json
-└── next.config.js
-```
-
-## Examples
-
-### Refresh Token Example
-
-```typescript
-import { refreshToken } from "@/lib/services/auth";
-
-async function handleTokenRefresh() {
-  const result = await refreshToken();
-
-  if (result.success && result.data) {
-    // Use the new access token
-    const accessToken = result.data.access_token;
-    const refreshToken = result.data.refresh_token;
-
-    // Update your token storage
-    // await updateTokens(accessToken, refreshToken);
-  } else {
-    // Handle error
-    console.error("Token refresh failed:", result.error);
-  }
-}
-```
-
-### Example Webhook Request
-
-```bash
-curl -X POST http://localhost:3000/api/webhook \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messageType": "example",
-    "data": {
-      "id": "123",
-      "name": "Test Item"
-    }
-  }'
-```
-
-### Example Response
-
-```json
-{
-  "success": true,
-  "message": "Example webhook processed successfully",
-  "data": {
-    "processedId": "123",
-    "processedName": "Test Item"
-  }
-}
-```

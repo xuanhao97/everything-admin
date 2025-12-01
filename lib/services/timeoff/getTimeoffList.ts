@@ -4,6 +4,7 @@
 // - Returns timeoff list data or error information
 // - Validates input and output using Zod schemas
 
+import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
 import {
   getTimeoffListOptionsSchema,
@@ -25,7 +26,6 @@ const ACCEPT_HEADER = "application/json, text/plain, */*";
 const ACCEPT_LANGUAGE = "en-GB,en-US;q=0.9,en;q=0.8";
 
 // Error messages
-const ERROR_MISSING_DOMAIN = "BASE_DOMAIN environment variable is not set";
 const ERROR_MISSING_TOKEN = "Access token is not provided";
 const ERROR_INVALID_RESPONSE = "Response data validation failed";
 
@@ -64,14 +64,7 @@ export async function getTimeoffList(
   }
 
   // Get domain from env, replace account.base.vn with timeoff.base.vn if needed
-  const baseDomain = process.env.BASE_DOMAIN;
-  if (!baseDomain) {
-    logger.error("Missing domain configuration");
-    return {
-      success: false,
-      error: ERROR_MISSING_DOMAIN,
-    };
-  }
+  const baseDomain = env.BASE_DOMAIN;
 
   // Convert account.base.vn to timeoff.base.vn
   const domain = baseDomain.replace("account.base.vn", "timeoff.base.vn");
@@ -84,7 +77,6 @@ export async function getTimeoffList(
     logger.error("Missing access token", {
       hasOptionsToken: !!validatedOptions?.accessToken,
       hasSessionToken: !!sessionAccessToken,
-      hasEnvToken: !!process.env.BASE_ACCESS_TOKEN,
     });
     return {
       success: false,

@@ -4,6 +4,7 @@
 // - Returns Base API tokens (access_token, refresh_token) or error information
 // - Validates input and output using Zod schemas
 
+import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
 import {
   ssoGoogleDataSchema,
@@ -11,6 +12,7 @@ import {
   type SsoGoogleOptions,
   type SsoGoogleResponse,
 } from "@/lib/schemas/auth";
+import { getBaseCookie } from "@/lib/utils/base-api";
 
 // API endpoint path for SSO Google
 const SSO_GOOGLE_ENDPOINT = "/ajax/mobile/auth/sso/google";
@@ -22,7 +24,6 @@ const MOBILE_CODE = "mobile";
 const USER_AGENT = "Base/1 CFNetwork/3860.300.21 Darwin/25.2.0";
 
 // Error messages
-const ERROR_MISSING_DOMAIN = "BASE_DOMAIN environment variable is not set";
 const ERROR_INVALID_RESPONSE = "Response data validation failed";
 
 // Create logger with context
@@ -60,16 +61,8 @@ export async function ssoGoogle(
   }
 
   const validatedOptions = validationResult.data;
-  const domain = process.env.BASE_DOMAIN;
-  const cookie = process.env.BASE_COOKIE;
-
-  if (!domain) {
-    logger.error("Missing domain configuration");
-    return {
-      success: false,
-      error: ERROR_MISSING_DOMAIN,
-    };
-  }
+  const domain = env.BASE_DOMAIN;
+  const cookie = getBaseCookie();
 
   const url = `${domain}${SSO_GOOGLE_ENDPOINT}`;
 

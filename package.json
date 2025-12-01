@@ -1,5 +1,5 @@
 {
-  "name": "base-admin",
+  "name": "everything-admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@t3-oss/env-nextjs": "^0.13.8",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
