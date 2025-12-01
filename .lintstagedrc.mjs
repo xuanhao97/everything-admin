@@ -1,6 +1,6 @@
 export default {
   "*.{js,jsx,ts,tsx}": [
-    "eslint --fix",
+    "eslint --fix --cache",
     "prettier --write",
     // Run typecheck once for all TypeScript files
     // This function will be called for each batch, but we only want to run once

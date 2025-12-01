@@ -20,6 +20,7 @@ export default [
       "next-env.d.ts",
       "pnpm-lock.yaml",
       ".git/**",
+      ".eslintcache/**",
     ],
   },
   ...tseslint.configs.recommended,

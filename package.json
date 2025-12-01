@@ -6,12 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --fix --cache",
     "format": "prettier --write .",
     "format:fix": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "clean:cache": "rm -rf .tsbuildinfo *.tsbuildinfo .eslintcache .next/cache",
     "prepare": "husky"
   },
   "dependencies": {
