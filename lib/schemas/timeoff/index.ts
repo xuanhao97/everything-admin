@@ -4,14 +4,14 @@ import { z } from "zod";
 // - Validates timeoff list options input
 // - Validates API response data structure
 
-// Enums for timeoff fields
-export const TimeoffStatusEnum = z.enum(["0", "10"]);
-export const TimeoffMetatypeEnum = z.enum(["annual", "unpaid", "other"]);
-export const TimeoffTypeEnum = z.enum(["shift"]);
-export const TimeoffStageEnum = z.enum(["0", "10"]);
-export const TimesheetMetatypeEnum = z.enum(["timesheet"]);
-export const LeaveFundEnum = z.enum(["annual", "unpaid", "other"]);
-export const LoadShiftsMethodEnum = z.enum(["actual"]);
+// Schemas for timeoff fields
+export const TimeoffStatusEnum = z.string();
+export const TimeoffMetatypeEnum = z.string();
+export const TimeoffTypeEnum = z.string();
+export const TimeoffStageEnum = z.string();
+export const TimesheetMetatypeEnum = z.string();
+export const LeaveFundEnum = z.string();
+export const LoadShiftsMethodEnum = z.string();
 
 // Schema for timeoff list options
 export const getTimeoffListOptionsSchema = z.object({

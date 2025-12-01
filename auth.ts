@@ -3,12 +3,19 @@
 // - Uses JWT strategy (no database required)
 // - Integrates with Base API SSO Google after successful OAuth
 // - Stores Base API tokens (access_token, refresh_token) in JWT
+// - Automatically refreshes Base API tokens when expired
 // - Exports auth instance and handlers
 
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-import { ssoGoogle } from "@/lib/services/auth";
+import { refreshToken, ssoGoogle } from "@/lib/services/auth";
+import { getBaseCookie } from "@/lib/utils/base-api";
+import {
+  getJwtExpiration,
+  isExpirationExpired,
+  isTokenExpired,
+} from "@/lib/utils/jwt";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -53,16 +60,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             if (baseAuthResult.success && baseAuthResult.data) {
               // Store Base API tokens in JWT
-              // Note: Base API returns JWT tokens, not expires_in
-              // We can decode JWT to get expiration if needed in the future
               if (baseAuthResult.data.access_token) {
                 token.baseAccessToken = baseAuthResult.data.access_token;
               }
               if (baseAuthResult.data.refresh_token) {
                 token.baseRefreshToken = baseAuthResult.data.refresh_token;
               }
-              // Base API tokens are JWT tokens, expiration is encoded in the token itself
-              // We'll handle token refresh when needed
+              // Store expiration time from JWT
+              if (baseAuthResult.data.access_token) {
+                const expiration = getJwtExpiration(
+                  baseAuthResult.data.access_token
+                );
+                if (expiration) {
+                  token.baseExpiresAt = expiration;
+                }
+              }
             } else {
               // If Base API SSO fails, don't create a valid session
               // This ensures users without Base API access cannot authenticate
@@ -77,6 +89,59 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
           } catch (error) {
             console.error("Error calling Base API SSO Google:", error);
+          }
+        }
+      }
+
+      // Refresh Base API token if expired or about to expire
+      if (
+        token.baseAccessToken &&
+        token.baseRefreshToken &&
+        typeof token.baseAccessToken === "string" &&
+        typeof token.baseRefreshToken === "string"
+      ) {
+        const shouldRefresh =
+          isTokenExpired(token.baseAccessToken) ||
+          (token.baseExpiresAt &&
+            typeof token.baseExpiresAt === "number" &&
+            isExpirationExpired(token.baseExpiresAt));
+
+        if (shouldRefresh) {
+          try {
+            const cookie = getBaseCookie();
+            const refreshResult = await refreshToken({
+              refreshToken: token.baseRefreshToken,
+              cookie,
+            });
+
+            if (refreshResult.success && refreshResult.data) {
+              // Update Base API tokens
+              if (refreshResult.data.access_token) {
+                token.baseAccessToken = refreshResult.data.access_token;
+                // Update expiration time
+                const expiration = getJwtExpiration(
+                  refreshResult.data.access_token
+                );
+                if (expiration) {
+                  token.baseExpiresAt = expiration;
+                }
+              }
+              if (refreshResult.data.refresh_token) {
+                token.baseRefreshToken = refreshResult.data.refresh_token;
+              }
+            } else {
+              console.error("Failed to refresh Base API token:", refreshResult.error);
+              // If refresh fails, clear tokens to force re-authentication
+              delete token.baseAccessToken;
+              delete token.baseRefreshToken;
+              delete token.baseExpiresAt;
+            }
+          } catch (error) {
+            console.error("Error refreshing Base API token:", error);
+            // If refresh fails, clear tokens to force re-authentication
+            delete token.baseAccessToken;
+            delete token.baseRefreshToken;
+            delete token.baseExpiresAt;
           }
         }
       }

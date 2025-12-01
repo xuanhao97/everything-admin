@@ -11,11 +11,9 @@ import {
   type GetTimeoffListOptions,
   type TimeoffListResponse,
 } from "@/lib/schemas/timeoff";
-import { refreshToken } from "@/lib/services/auth";
 import {
   getBaseAccessToken,
   getBaseCookie,
-  getBaseRefreshToken,
 } from "@/lib/utils/base-api";
 
 // API endpoint path for timeoff list
@@ -135,36 +133,6 @@ export async function getTimeoffList(
 
     // Check if response indicates success (code === 1)
     if (data.code !== 1) {
-      // If token is invalid, try to refresh and retry once
-      if (
-        data.message === "INVALID_CLIENT_KEY_V3_1" &&
-        !validatedOptions?.accessToken
-      ) {
-        logger.error("Access token invalid, attempting to refresh", {
-          code: data.code,
-          message: data.message,
-        });
-
-        const refreshTokenValue = await getBaseRefreshToken();
-        if (refreshTokenValue) {
-          const refreshResult = await refreshToken({
-            refreshToken: refreshTokenValue,
-            cookie,
-          });
-
-          if (refreshResult.success && refreshResult.data?.access_token) {
-            logger.success("Token refreshed, retrying request");
-            // Retry with new token
-            return getTimeoffList({
-              accessToken: refreshResult.data.access_token,
-              cookie,
-            });
-          }
-        }
-
-        logger.error("Failed to refresh token or no refresh token available");
-      }
-
       logger.error("Base API returned error code", {
         code: data.code,
         message: data.message,
