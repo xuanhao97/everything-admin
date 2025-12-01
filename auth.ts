@@ -10,6 +10,60 @@ import Google from "next-auth/providers/google";
 
 import { env } from "@/env";
 
+/**
+ * Refreshes Google OAuth access token using refresh token
+ * @param token - Current JWT token containing refresh token
+ * @returns Updated token with new access token and expiry
+ */
+async function refreshGoogleAccessToken(token: {
+  googleRefreshToken?: string;
+  googleAccessToken?: string;
+  googleExpiresAt?: number;
+  [key: string]: unknown;
+}) {
+  if (!token.googleRefreshToken) {
+    throw new Error("Missing Google refresh token");
+  }
+
+  try {
+    const response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        grant_type: "refresh_token",
+        refresh_token: token.googleRefreshToken,
+      }),
+    });
+
+    const refreshedTokens = await response.json();
+
+    if (!response.ok) {
+      throw refreshedTokens;
+    }
+
+    return {
+      ...token,
+      googleAccessToken: refreshedTokens.access_token,
+      googleExpiresAt: Math.floor(
+        Date.now() / 1000 + (refreshedTokens.expires_in ?? 3600)
+      ),
+      // Google may issue a new refresh token, preserve it if provided
+      googleRefreshToken:
+        refreshedTokens.refresh_token ?? token.googleRefreshToken,
+    };
+  } catch (error) {
+    console.error("Error refreshing Google access token:", error);
+    return {
+      ...token,
+      error: "RefreshTokenError" as const,
+    };
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -43,10 +97,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.image = user.image;
         token.googleAccessToken = account.access_token;
         token.googleRefreshToken = account.refresh_token;
+        token.googleExpiresAt =
+          account.expires_at ?? Math.floor(Date.now() / 1000 + 3600); // Default to 1 hour if not provided
         // Clear Base API tokens on new sign in
         delete token.baseAccessToken;
         delete token.baseRefreshToken;
         delete token.baseExpiresAt;
+        return token;
+      }
+
+      // Check if Google access token has expired and refresh if needed
+      if (
+        token.googleRefreshToken &&
+        typeof token.googleExpiresAt === "number" &&
+        Date.now() >= token.googleExpiresAt * 1000
+      ) {
+        try {
+          const refreshedToken = await refreshGoogleAccessToken(token);
+          return refreshedToken;
+        } catch (error) {
+          console.error("Error refreshing Google access token:", error);
+          token.error = "RefreshTokenError";
+          return token;
+        }
       }
 
       // Allow updating Base API tokens via session update
@@ -88,6 +161,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       ) {
         session.googleRefreshToken = token.googleRefreshToken;
       }
+      if (token.googleExpiresAt && typeof token.googleExpiresAt === "number") {
+        session.googleExpiresAt = token.googleExpiresAt;
+      }
 
       // Add Base API tokens to session (stored in JWT, not exposed to client by default)
       // These are used server-side only
@@ -104,6 +180,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.baseExpiresAt = token.baseExpiresAt;
       }
 
+      // Propagate refresh token errors to session
+      if (token.error === "RefreshTokenError") {
+        session.error = token.error;
+      }
+
       return session;
     },
   },
@@ -114,14 +195,18 @@ declare module "next-auth" {
   interface Session {
     googleAccessToken?: string;
     googleRefreshToken?: string;
+    googleExpiresAt?: number;
     baseAccessToken?: string;
     baseRefreshToken?: string;
     baseExpiresAt?: number;
+    error?: "RefreshTokenError";
   }
   interface JWT {
+    googleExpiresAt?: number;
     baseAccessToken?: string;
     baseRefreshToken?: string;
     baseExpiresAt?: number;
+    error?: "RefreshTokenError";
   }
 }
 
