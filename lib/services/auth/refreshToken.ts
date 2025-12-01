@@ -5,6 +5,7 @@
 // - Validates input and output using Zod schemas
 
 import { env } from "@/env";
+import { createFetchClient } from "@/lib/fetch-client";
 import {
   refreshTokenDataSchema,
   refreshTokenOptionsSchema,
@@ -65,58 +66,59 @@ export async function refreshToken(
     };
   }
 
-  const url = `${domain}${REFRESH_TOKEN_ENDPOINT}`;
+  // Create fetch client with base URL
+  // fetch-client handles logging and error handling internally when enableLogger is true
+  const client = createFetchClient({
+    baseUrl: domain,
+    enableLogger: true,
+  });
 
-  try {
-    const formData = new URLSearchParams();
-    formData.append("refresh_token", refreshTokenValue);
-    formData.append("__code", MOBILE_CODE);
+  // Prepare form data (URLSearchParams for form-urlencoded)
+  const formData = new URLSearchParams();
+  formData.append("refresh_token", refreshTokenValue);
+  formData.append("__code", MOBILE_CODE);
 
-    const headers: HeadersInit = {
-      "User-Agent": USER_AGENT,
-      "Cache-Control": "no-cache",
-    };
+  // Prepare headers
+  const headers: Record<string, string> = {
+    "User-Agent": USER_AGENT,
+    "Cache-Control": "no-cache",
+  };
 
-    const cookieValue = validatedOptions?.cookie || cookie;
-    if (cookieValue) {
-      headers.Cookie = cookieValue;
-    }
+  const cookieValue = validatedOptions?.cookie || cookie;
+  if (cookieValue) {
+    headers.Cookie = cookieValue;
+  }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: formData,
-    });
+  // Make request using fetch-client
+  // URLSearchParams is supported directly, Content-Type will be set automatically
+  // parseJson defaults to true, so no need to specify
+  // fetch-client handles all errors internally
+  const result = await client.request<{
+    code?: number;
+    message?: string;
+    access_token?: string;
+    refresh_token?: string;
+  }>({
+    url: REFRESH_TOKEN_ENDPOINT,
+    method: "POST",
+    headers,
+    body: formData,
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return {
-        success: false,
-        error: `HTTP ${response.status}: ${errorText}`,
-        message: errorText,
-      };
-    }
+  const data = result.data;
 
-    const data = await response.json();
-
-    // Validate response data structure
-    const validatedData = refreshTokenDataSchema.safeParse(data);
-    if (!validatedData.success) {
-      return {
-        success: false,
-        error: `Invalid response data: ${validatedData.error.errors.map((e) => e.message).join(", ")}`,
-        message: ERROR_INVALID_RESPONSE,
-      };
-    }
-
-    return {
-      success: true,
-      data: validatedData.data,
-    };
-  } catch (error) {
+  // Validate response data structure
+  const validatedData = refreshTokenDataSchema.safeParse(data);
+  if (!validatedData.success) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: `Invalid response data: ${validatedData.error.errors.map((e) => e.message).join(", ")}`,
+      message: ERROR_INVALID_RESPONSE,
     };
   }
+
+  return {
+    success: true,
+    data: validatedData.data,
+  };
 }

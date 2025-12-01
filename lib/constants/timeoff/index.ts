@@ -35,4 +35,3 @@ export const LEAVE_FUND = {
 export const LOAD_SHIFTS_METHOD = {
   ACTUAL: "actual",
 } as const;
-

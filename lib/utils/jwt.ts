@@ -70,4 +70,3 @@ export function isExpirationExpired(expiresAt?: number): boolean {
   const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
   return Date.now() >= expiresAt - fiveMinutes;
 }
-

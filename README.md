@@ -233,4 +233,3 @@ registerHandler("my-message-type", handleMyMessage);
 ```typescript
 import "./my-handler";
 ```
-

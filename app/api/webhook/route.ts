@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createLogger } from "@/lib/logger";
+import { createLogger } from "@/lib/loggers";
 import { dispatchWebhook } from "@/lib/webhook/dispatcher";
 import { baseWebhookSchema } from "@/lib/webhook/schemas";
 
@@ -9,7 +9,7 @@ import { baseWebhookSchema } from "@/lib/webhook/schemas";
 import "@/lib/webhook/handlers";
 
 // Create logger with context
-const logger = createLogger("WEBHOOK");
+const logger = createLogger({ service: "WEBHOOK" });
 
 // Webhook response schema - stable format
 const webhookResponseSchema = z.object({

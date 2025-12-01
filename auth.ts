@@ -131,7 +131,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.baseRefreshToken = refreshResult.data.refresh_token;
               }
             } else {
-              console.error("Failed to refresh Base API token:", refreshResult.error);
+              console.error(
+                "Failed to refresh Base API token:",
+                refreshResult.error
+              );
               // If refresh fails, clear tokens to force re-authentication
               delete token.baseAccessToken;
               delete token.baseRefreshToken;
